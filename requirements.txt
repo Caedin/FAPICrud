@@ -1,0 +1,4 @@
+pyodbc
+sqlalchemy
+fastapi[all]
+uvicorn[standard]

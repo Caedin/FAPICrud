@@ -58,7 +58,7 @@ class SqlManager():
             UPDATE {schema}.{table} SET {', '.join([f"{col}=:{col}" for col in cols])} OUTPUT Inserted.* WHERE {id_column} = :id
             '''
         )
-        data_lower[id_column] = id
+        data_lower['id'] = id
         return self._execute_query(text, data_lower)
 
     def delete(self, schema, table, id):
@@ -68,7 +68,7 @@ class SqlManager():
             DELETE FROM {schema}.{table} OUTPUT DELETED.* WHERE {id_column} = :id
             '''
         )
-        return self._execute_query(text, {id_column : id})
+        return self._execute_query(text, {'id' : id})
 
     def post(self, schema, table, data):
         id_column = self.get_id_column(schema, table)

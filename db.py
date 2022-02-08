@@ -14,6 +14,13 @@ class SqlManager():
             self.schema = schema
         self.id_columns = {}
 
+    def _get_column_mappings(self, schema, table, data):
+        id_column = self.get_id_column(schema, table)
+        data_lower = {k.lower(): v for k, v in data.items() if k.lower() != id_column}
+        valid_columns = set([x.lower() for x in list(self.engine.execute(f'SELECT TOP 1 * FROM {schema}.{table}').keys())]) - set(id_column)
+        cols = [x for x in data_lower.keys() if x in valid_columns]
+        return data_lower, cols
+
     def _execute_query(self, text, params):
         conn = self.engine.connect()
         try:
@@ -50,9 +57,7 @@ class SqlManager():
 
     def put(self, schema, table, id, data):
         id_column = self.get_id_column(schema, table)
-        data_lower = {k.lower(): v for k, v in data.items() if k.lower() != id_column}
-        valid_columns = set([x.lower() for x in list(self.engine.execute(f'SELECT TOP 1 * FROM {schema}.{table}').keys())]) - set(id_column)
-        cols = [x for x in data_lower.keys() if x in valid_columns]
+        data_lower, cols = self._get_column_mappings(schema, table, data)
         text = sqlalchemy.sql.text(
             f'''
             UPDATE {schema}.{table} SET {', '.join([f"{col}=:{col}" for col in cols])} OUTPUT Inserted.* WHERE {id_column} = :id
@@ -71,17 +76,13 @@ class SqlManager():
         return self._execute_query(text, {'id' : id})
 
     def post(self, schema, table, data):
-        id_column = self.get_id_column(schema, table)
-        data_lower = {k.lower(): v for k, v in data.items() if k.lower() != id_column}
-        valid_columns = set([x.lower() for x in list(self.engine.execute(f'SELECT TOP 1 * FROM {schema}.{table}').keys())]) - set(id_column)
-        cols = [x for x in data_lower.keys() if x in valid_columns]
+        data_lower, cols = self._get_column_mappings(schema, table, data)
         text = sqlalchemy.sql.text(
             f'''
             INSERT INTO {schema}.{table} ({', '.join(cols)}) OUTPUT Inserted.* VALUES
             ({','.join([f":{col}" for col in cols])})
             '''
         )
-
         return self._execute_query(text, data_lower)
 
         

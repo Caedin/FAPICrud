@@ -33,6 +33,7 @@ class SqlManager():
         return result
 
     def get_id_column(self, schema, table):
+        schema, table = schema.lower(), table.lower()
         if f'{schema}.{table}' not in self.id_columns:
             valid_columns = set([x.lower() for x in list(self.engine.execute(f'SELECT TOP 1 * FROM {schema}.{table}').keys())])
             if 'id' in valid_columns:
